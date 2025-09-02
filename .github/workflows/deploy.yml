@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 🔹 Sjekk ut repo
+      # 🔹 Sjekk ut koden
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -35,13 +35,13 @@ jobs:
           sudo mv kubelogin/bin/linux_amd64/kubelogin /usr/local/bin/
           kubelogin --version
 
-      # 🔹 Hent kubeconfig for AKS (OIDC RBAC brukes)
+      # 🔹 Hent kubeconfig fra AKS med OIDC (ikke device code)
       - name: Get AKS credentials
         run: |
           az aks get-credentials \
             --resource-group rg-aks-prod \
             --name aks-prod \
-            --overwrite-existing \ 
+            --overwrite-existing \
             --auth-method=client
 
       # 🔹 Login til ACR med OIDC
@@ -49,7 +49,7 @@ jobs:
         run: |
           az acr login --name acr6064
 
-      # 🔹 Build og push Docker image
+      # 🔹 Bygg og push Docker image
       - name: Build and Push Docker image
         run: |
           IMAGE_TAG=acr6064.azurecr.io/demoapp:${{ github.sha }}
