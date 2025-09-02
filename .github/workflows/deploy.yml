@@ -57,8 +57,13 @@ jobs:
           docker build -t $IMAGE_TAG .
           docker push $IMAGE_TAG
 
-      # 🔹 Bootstrap demo-app (Namespace, Deployment, Service)
-      - name: Bootstrap demo-app
+      # 🔹 Apply eksisterende demoapp.yaml
+      - name: Apply demoapp manifest
         run: |
-          kubectl create namespace demoapp --dry-run=client -o yaml | kubectl apply -f -
-          cat <<EOF | kubectl apply -f -
+          kubectl apply -f k8s/demoapp.yaml
+
+      # 🔹 Oppdater deployment med ny image og rollout
+      - name: Deploy updated image
+        run: |
+          kubectl set image deployment/demoapp demoapp=$IMAGE_TAG -n demoapp
+          kubectl rollout status deployment/demoapp -n demoapp
