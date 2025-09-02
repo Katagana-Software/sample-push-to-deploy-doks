@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 🔹 Sjekk ut koden
+      # 🔹 Sjekk ut repo
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -35,14 +35,14 @@ jobs:
           sudo mv kubelogin/bin/linux_amd64/kubelogin /usr/local/bin/
           kubelogin --version
 
-      # 🔹 Hent kubeconfig fra AKS med OIDC (ikke device code)
+      # 🔹 Hent kubeconfig fra AKS (bruker admin creds for CI/CD)
       - name: Get AKS credentials
         run: |
           az aks get-credentials \
             --resource-group rg-aks-prod \
             --name aks-prod \
             --overwrite-existing \
-            --auth-method=client
+            --admin
 
       # 🔹 Login til ACR med OIDC
       - name: Login to ACR
