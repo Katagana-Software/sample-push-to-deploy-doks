@@ -65,7 +65,7 @@ jobs:
       # 🔹 Appliker eksisterende demoapp.yaml
       - name: Apply demoapp manifest
         run: |
-          kubectl apply -f k8s/demoapp.yaml
+          kubectl apply -f k8s/demo-app.yaml
 
       # 🔹 Oppdater deployment med ny image og rollout
       - name: Deploy updated image
