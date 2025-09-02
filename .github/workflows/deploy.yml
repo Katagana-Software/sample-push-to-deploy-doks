@@ -1,4 +1,4 @@
-name: Build and Deploy to AKS
+name: Deploy to AKS
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
 
 permissions:
-  id-token: write   # for OIDC
+  id-token: write
   contents: read
 
 jobs:
@@ -14,40 +14,51 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 🔹 Sjekk ut repo
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      # 🔹 Login to Azure with OIDC
+      # 🔹 Azure login (OIDC)
       - name: Azure Login
-        uses: azure/login@v2
+        uses: azure/login@v1
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      # 🔹 Login to ACR (OIDC already active from azure/login)
-      - name: Login to ACR
+      # 🔹 Installer kubelogin (nødvendig for AAD-enabled AKS)
+      - name: Install kubelogin
         run: |
-          az acr login --name acr6064
+          curl -LO https://github.com/Azure/kubelogin/releases/latest/download/kubelogin-linux-amd64.zip
+          sudo apt-get update && sudo apt-get install -y unzip
+          unzip kubelogin-linux-amd64.zip -d kubelogin
+          sudo mv kubelogin/bin/linux_amd64/kubelogin /usr/local/bin/
+          kubelogin --version
 
-      # 🔹 Build & push Docker image
-      - name: Build and Push image
-        run: |
-          IMAGE_TAG=acr6064.azurecr.io/demoapp:${{ github.sha }}
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
-          docker build -t $IMAGE_TAG .
-          docker push $IMAGE_TAG
-
-      # 🔹 Get AKS credentials
-      - name: Get AKS context
+      # 🔹 Hent kubeconfig fra AKS (Azure RBAC brukes)
+      - name: Get AKS credentials
         run: |
           az aks get-credentials \
             --resource-group rg-aks-prod \
             --name aks-prod \
             --overwrite-existing
 
-      # 🔹 Deploy to AKS
+      # 🔹 Login til ACR med OIDC
+      - name: ACR login
+        uses: azure/docker-login@v2
+        with:
+          login-server: acr6064.azurecr.io
+
+      # 🔹 Bygg og push Docker image
+      - name: Build and Push Docker image
+        run: |
+          IMAGE=acr6064.azurecr.io/demoapp:${{ github.sha }}
+          docker build -t $IMAGE .
+          docker push $IMAGE
+          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
+
+      # 🔹 Deploy til AKS
       - name: Deploy to AKS
         run: |
-          kubectl set image deployment/demoapp \
-            demoapp=$IMAGE_TAG --record
+          kubectl set image deployment/demoapp demoapp=$IMAGE
+          kubectl rollout status deployment/demoapp
