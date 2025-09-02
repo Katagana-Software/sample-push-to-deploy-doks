@@ -2,49 +2,53 @@ name: Build and Deploy to AKS
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
 
 permissions:
-  id-token: write   # For OIDC login
-  contents: read    # For checkout
+  id-token: write   # for OIDC
+  contents: read
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Azure Login (OIDC)
+      # 🔹 Login to Azure with OIDC
+      - name: Azure Login
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      # 🔹 Build & push Docker image to ACR
+      - name: Build and Push image to ACR
+        uses: azure/docker-login@v2
+        with:
+          login-server: acr6064.azurecr.io
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - run: |
+          IMAGE_TAG=acr6064.azurecr.io/demoapp:${{ github.sha }}
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          docker build -t $IMAGE_TAG .
+          docker push $IMAGE_TAG
 
-      - name: Log in to ACR
-        run: |
-          az acr login --name ${{ secrets.ACR_NAME }}
-
-      - name: Build and Push Docker image
-        run: |
-          IMAGE=${{ secrets.ACR_NAME }}.azurecr.io/demoapp:${{ github.sha }}
-          docker build -t $IMAGE .
-          docker push $IMAGE
-          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
-
-      - name: Get AKS credentials
+      # 🔹 Get AKS credentials
+      - name: Get AKS context
         run: |
           az aks get-credentials \
-            --resource-group ${{ secrets.AKS_RG }} \
-            --name ${{ secrets.AKS_NAME }} \
+            --resource-group rg-aks-prod \
+            --name aks-prod \
             --overwrite-existing
 
+      # 🔹 Deploy to AKS using kubectl
       - name: Deploy to AKS
         run: |
-          kubectl set image deployment/demoapp demoapp=$IMAGE --namespace=default
-          kubectl rollout status deployment/demoapp --namespace=default
+          kubectl set image deployment/demoapp \
+            demoapp=$IMAGE_TAG --record
