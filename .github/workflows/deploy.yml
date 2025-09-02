@@ -41,7 +41,8 @@ jobs:
           az aks get-credentials \
             --resource-group rg-aks-prod \
             --name aks-prod \
-            --overwrite-existing
+            --overwrite-existing \ 
+            --auth-method=client
 
       # 🔹 Login til ACR med OIDC
       - name: Login to ACR
