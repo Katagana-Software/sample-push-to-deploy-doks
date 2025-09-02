@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 🔹 Sjekk ut koden
+      # 🔹 Checkout repo
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -49,7 +49,7 @@ jobs:
         run: |
           az acr login --name acr6064
 
-      # 🔹 Bygg og push Docker image
+      # 🔹 Build og push Docker image
       - name: Build and Push Docker image
         run: |
           IMAGE_TAG=acr6064.azurecr.io/demoapp:${{ github.sha }}
@@ -57,10 +57,15 @@ jobs:
           docker build -t $IMAGE_TAG .
           docker push $IMAGE_TAG
 
-      # 🔹 Apply eksisterende demoapp.yaml
+      # 🔹 Opprett namespace hvis den ikke finnes
+      - name: Ensure demoapp namespace exists
+        run: |
+          kubectl create namespace demoapp --dry-run=client -o yaml | kubectl apply -f -
+
+      # 🔹 Appliker eksisterende demoapp.yaml
       - name: Apply demoapp manifest
         run: |
-          kubectl apply -f k8s/demo-app.yaml
+          kubectl apply -f k8s/demoapp.yaml
 
       # 🔹 Oppdater deployment med ny image og rollout
       - name: Deploy updated image
