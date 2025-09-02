@@ -25,15 +25,14 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      # 🔹 Build & push Docker image to ACR
-      - name: Build and Push image to ACR
-        uses: azure/docker-login@v2
-        with:
-          login-server: acr6064.azurecr.io
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - run: |
+      # 🔹 Login to ACR (OIDC already active from azure/login)
+      - name: Login to ACR
+        run: |
+          az acr login --name acr6064
+
+      # 🔹 Build & push Docker image
+      - name: Build and Push image
+        run: |
           IMAGE_TAG=acr6064.azurecr.io/demoapp:${{ github.sha }}
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
           docker build -t $IMAGE_TAG .
@@ -47,7 +46,7 @@ jobs:
             --name aks-prod \
             --overwrite-existing
 
-      # 🔹 Deploy to AKS using kubectl
+      # 🔹 Deploy to AKS
       - name: Deploy to AKS
         run: |
           kubectl set image deployment/demoapp \
