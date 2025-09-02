@@ -1,4 +1,4 @@
-name: Build and Deploy to AKS
+name: Build and Deploy DemoApp to AKS
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 🔹 Sjekk ut repo
+      # 🔹 Sjekk ut koden
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -26,7 +26,7 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      # 🔹 Installer kubelogin (nødvendig for AAD-enabled AKS)
+      # 🔹 Installer kubelogin
       - name: Install kubelogin
         run: |
           curl -LO https://github.com/Azure/kubelogin/releases/latest/download/kubelogin-linux-amd64.zip
@@ -35,7 +35,7 @@ jobs:
           sudo mv kubelogin/bin/linux_amd64/kubelogin /usr/local/bin/
           kubelogin --version
 
-      # 🔹 Hent kubeconfig fra AKS (bruker admin creds for CI/CD)
+      # 🔹 Hent kubeconfig fra AKS med admin creds
       - name: Get AKS credentials
         run: |
           az aks get-credentials \
@@ -57,8 +57,8 @@ jobs:
           docker build -t $IMAGE_TAG .
           docker push $IMAGE_TAG
 
-      # 🔹 Deploy til AKS
-      - name: Deploy to AKS
+      # 🔹 Bootstrap demo-app (Namespace, Deployment, Service)
+      - name: Bootstrap demo-app
         run: |
-          kubectl set image deployment/demoapp demoapp=$IMAGE_TAG
-          kubectl rollout status deployment/demoapp
+          kubectl create namespace demoapp --dry-run=client -o yaml | kubectl apply -f -
+          cat <<EOF | kubectl apply -f -
