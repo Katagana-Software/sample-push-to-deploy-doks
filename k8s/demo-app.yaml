@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: demoapp
+  namespace: demoapp
   labels:
     app: demoapp
 spec:
@@ -30,5 +31,30 @@ spec:
     app: demoapp
   ports:
     - port: 80
-      targetPort: 8080
+      targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: demoapp-ingress
+  namespace: demoapp
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  rules:
+    - host: tetsu.katagana.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: demoapp
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - tetsu.katagana.io
+      secretName: demoapp-tls
 
