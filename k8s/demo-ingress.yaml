@@ -1,15 +1,16 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: demo-app
+  name: demoappingress
   annotations:
+    kubernetes.io/ingress.class: traefik
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: traefik
   tls:
     - hosts:
         - tetsu.katagana.io
-      secretName: demo-app-tls
+      secretName: demoapp-tls
   rules:
     - host: tetsu.katagana.io
       http:

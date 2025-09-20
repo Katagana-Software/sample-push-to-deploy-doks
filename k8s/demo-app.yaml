@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: demo-app
+  name: demoapp
   labels:
-    app: demo-app
+    app: demoapp
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: demo-app
+      app: demoapp
   template:
     metadata:
       labels:
-        app: demo-app
+        app: demoapp
     spec:
       containers:
-        - name: demo-app
+        - name: demoapp
           image: nginx
           ports:
             - containerPort: 80
@@ -23,12 +23,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: demo-app
+  name: demoapp
 spec:
   type: ClusterIP
   selector:
-    app: demo-app
+    app: demoapp
   ports:
     - port: 80
-      targetPort: 80
+      targetPort: 8080
 
