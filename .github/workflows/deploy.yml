@@ -47,7 +47,7 @@ jobs:
       # 🔹 Login til ACR med OIDC
       - name: Login to ACR
         run: |
-          az acr login --name acr6064
+          az acr login --name acrkatagana.azurecr.io
 
       # 🔹 Build og push Docker image
       - name: Build and Push Docker image
